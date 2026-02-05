@@ -1,0 +1,21 @@
+# 忽略任意层级下的无用目录
+.idea/
+.vscode/
+logs/
+target/
+.DS_Store
+
+
+*.class
+*.jar
+*.war
+*.zip
+*.tar
+*.gz
+*.bz2
+*.rar
+*.7z
+*.iso
+*.dmg
+*.img
+*.log

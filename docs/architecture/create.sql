@@ -41,20 +41,15 @@ DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` CHAR(36) NOT NULL COMMENT '用户UUID（业务主键）',
-  `openid` VARCHAR(128) NOT NULL COMMENT '微信OpenID',
-  `unionid` VARCHAR(128) DEFAULT NULL COMMENT '微信UnionID',
+  `email` VARCHAR(100) NOT NULL COMMENT '邮箱（登录唯一标识）',
+  `password` VARCHAR(100) NOT NULL COMMENT '密码（BCrypt加密）',
   `nickname` VARCHAR(50) NOT NULL COMMENT '昵称，1-20字符',
-  `avatar` VARCHAR(100) NOT NULL COMMENT '头像标识（系统预设头像ID）',
+  `avatar` VARCHAR(100) NOT NULL DEFAULT 'avatar-1' COMMENT '头像标识（系统预设头像ID）',
   `ip_location` VARCHAR(50) DEFAULT NULL COMMENT 'IP属地（省 市）',
-  
-  -- 账号状态
-  `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT '账号状态：ACTIVE（正常）/DEACTIVATED（已注销）',
-  `deactivated_at` DATETIME(3) DEFAULT NULL COMMENT '注销时间',
   
   -- 打卡统计
   `consecutive_days` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '连续打卡天数',
   `last_check_in_date` DATE DEFAULT NULL COMMENT '最近打卡日期（本地时区）',
-  `consecutive_uncheck_days` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '连续未打卡天数',
   
   -- 昵称修改限制
   `nickname_modify_count` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '7天内昵称修改次数',
@@ -67,9 +62,8 @@ CREATE TABLE `user` (
   
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_id` (`user_id`),
-  UNIQUE KEY `uk_openid` (`openid`),
-  KEY `idx_status` (`status`, `deleted_at`),
-  KEY `idx_last_check_in` (`last_check_in_date`, `status`)
+  UNIQUE KEY `uk_email` (`email`),
+  KEY `idx_last_check_in` (`last_check_in_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- =====================================================
@@ -422,14 +416,12 @@ CREATE TABLE `system_config` (
 -- =====================================================
 
 INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `description`) VALUES
-('uncheck_push_time_window', '{"start": "20:00", "end": "21:00"}', 'JSON', '未打卡提醒推送时间窗口'),
 ('max_device_count', '10', 'INT', '同时登录设备数上限'),
 ('max_task_per_day', '50', 'INT', '单日任务数上限（不含重复任务副本）'),
 ('max_subtask_per_task', '20', 'INT', '单个任务子任务数上限'),
 ('max_repeat_instances', '365', 'INT', '单个重复任务最多生成副本数'),
 ('nickname_modify_limit_days', '7', 'INT', '昵称修改限制天数'),
 ('nickname_modify_limit_count', '2', 'INT', '昵称修改限制次数（X天内最多Y次）'),
-('deactivate_uncheck_days', '7', 'INT', '连续未打卡注销天数'),
 ('free_trial_days', '30', 'INT', '免费期天数'),
 ('order_expire_minutes', '15', 'INT', '订单过期时间（分钟）'),
 ('idempotent_expire_hours', '24', 'INT', '幂等记录过期时间（小时）');
@@ -439,9 +431,8 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 -- =====================================================
 -- 1. user 表：
 --    - uk_user_id：业务主键查询
---    - uk_openid：微信登录查询
---    - idx_status：筛选正常/注销用户
---    - idx_last_check_in：定时任务查询未打卡用户
+--    - uk_email：邮箱登录查询
+--    - idx_last_check_in：查询打卡统计
 --
 -- 2. task 表：
 --    - uk_task_id：业务主键查询
@@ -503,11 +494,6 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 -- =====================================================
 -- 定时任务需求
 -- =====================================================
--- 1. 每日 00:00（用户本地时区）：
---    - 结算昨日打卡：更新 user.consecutive_uncheck_days
---    - 检查 7 天未打卡：标记账号为 DEACTIVATED
---    - 发送未打卡提醒推送（20:00-21:00 窗口）
---
 -- 2. 每日 01:00（UTC）：
 --    - 清理过期幂等记录（expire_at < now）
 --    - 关闭过期订单（status=PENDING AND expire_at < now）
