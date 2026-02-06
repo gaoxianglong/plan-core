@@ -41,7 +41,7 @@ public enum ErrorCode {
     
     // 用户中心 5001-5099
     USER_NICKNAME_FORBIDDEN(5001, "昵称包含违规词"),
-    USER_NICKNAME_TOO_FREQUENT(5002, "昵称修改过于频繁");
+    USER_NICKNAME_TOO_FREQUENT(5002, "昵称7天内最多修改2次");
     
     private final int code;
     private final String message;

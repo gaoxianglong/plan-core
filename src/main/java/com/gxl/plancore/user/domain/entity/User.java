@@ -144,4 +144,55 @@ public class User {
         this.password = newPassword;
         this.updatedAt = Instant.now();
     }
+    
+    /**
+     * 修改昵称
+     * 7天内最多修改2次
+     * 
+     * @param newNickname 新昵称值对象
+     * @throws IllegalStateException 修改过于频繁时抛出
+     */
+    public void changeNickname(Nickname newNickname) {
+        Instant now = Instant.now();
+        
+        // 判断是否在7天窗口内
+        if (nicknameFirstModifyAt != null) {
+            Instant windowEnd = nicknameFirstModifyAt.plusSeconds(7 * 24 * 60 * 60);
+            if (now.isBefore(windowEnd)) {
+                // 在7天窗口内，检查修改次数
+                if (nicknameModifyCount >= 2) {
+                    long remainSeconds = windowEnd.getEpochSecond() - now.getEpochSecond();
+                    long remainDays = remainSeconds / (24 * 60 * 60) + 1;
+                    throw new IllegalStateException(
+                            String.format("昵称修改过于频繁，请 %d 天后再试", remainDays));
+                }
+                // 窗口内且次数未满，增加计数
+                this.nicknameModifyCount = this.nicknameModifyCount + 1;
+            } else {
+                // 窗口已过，重置计数
+                this.nicknameModifyCount = 1;
+                this.nicknameFirstModifyAt = now;
+            }
+        } else {
+            // 首次修改
+            this.nicknameModifyCount = 1;
+            this.nicknameFirstModifyAt = now;
+        }
+        
+        this.nickname = newNickname;
+        this.updatedAt = now;
+    }
+    
+    /**
+     * 修改头像
+     * 
+     * @param newAvatar 新头像标识
+     */
+    public void changeAvatar(String newAvatar) {
+        if (newAvatar == null || newAvatar.trim().isEmpty()) {
+            throw new IllegalArgumentException("头像标识不能为空");
+        }
+        this.avatar = newAvatar.trim();
+        this.updatedAt = Instant.now();
+    }
 }

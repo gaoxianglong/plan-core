@@ -61,4 +61,16 @@ public class UserRepositoryImpl implements UserRepository {
                 user.getUpdatedAt()
         );
     }
+    
+    @Override
+    public void updateProfile(User user) {
+        userMapper.updateProfile(
+                user.getUserId().getValue(),
+                user.getNickname().getValue(),
+                user.getAvatar(),
+                user.getNicknameModifyCount(),
+                user.getNicknameFirstModifyAt(),
+                user.getUpdatedAt()
+        );
+    }
 }

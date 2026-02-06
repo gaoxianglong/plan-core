@@ -35,4 +35,9 @@ public interface UserRepository {
      * 更新用户密码
      */
     void updatePassword(User user);
+    
+    /**
+     * 更新用户资料（昵称、头像、昵称修改计数）
+     */
+    void updateProfile(User user);
 }

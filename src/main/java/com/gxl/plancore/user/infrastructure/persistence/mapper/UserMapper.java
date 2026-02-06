@@ -39,4 +39,15 @@ public interface UserMapper {
             "WHERE user_id = #{userId} AND deleted_at IS NULL")
     int updatePassword(@Param("userId") String userId, @Param("password") String password, 
                        @Param("updatedAt") java.time.Instant updatedAt);
+    
+    @org.apache.ibatis.annotations.Update("UPDATE user SET nickname = #{nickname}, avatar = #{avatar}, " +
+            "nickname_modify_count = #{nicknameModifyCount}, nickname_first_modify_at = #{nicknameFirstModifyAt}, " +
+            "updated_at = #{updatedAt} " +
+            "WHERE user_id = #{userId} AND deleted_at IS NULL")
+    int updateProfile(@Param("userId") String userId,
+                      @Param("nickname") String nickname,
+                      @Param("avatar") String avatar,
+                      @Param("nicknameModifyCount") int nicknameModifyCount,
+                      @Param("nicknameFirstModifyAt") java.time.Instant nicknameFirstModifyAt,
+                      @Param("updatedAt") java.time.Instant updatedAt);
 }
