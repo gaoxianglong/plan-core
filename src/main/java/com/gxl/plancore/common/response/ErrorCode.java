@@ -35,6 +35,8 @@ public enum ErrorCode {
     TASK_HAS_INCOMPLETE_SUBTASKS(3005, "父任务存在未完成子任务"),
     TASK_PARENT_NOT_FOUND(3006, "父任务不存在"),
     TASK_SUBTASK_LIMIT(3007, "子任务数量超出上限"),
+    TASK_VIRTUAL_ID_INVALID(3008, "虚拟任务ID格式错误"),
+    TASK_NOT_FOUND(3009, "任务不存在"),
     
     // 专注模块 4001-4099
     FOCUS_SESSION_EXISTS(4001, "存在进行中的会话"),

@@ -69,7 +69,12 @@ CREATE TABLE `user` (
 -- =====================================================
 -- 2. 任务表（task）
 -- =====================================================
--- 说明：存储任务信息，支持重复任务
+-- 说明：存储任务信息，支持重复任务（虚拟展开 + 按需实例化）
+--   - 普通任务：repeat_type=NONE, is_repeat_instance=0
+--   - 重复模板：repeat_type=DAILY/WEEKLY/MONTHLY, is_repeat_instance=0
+--     只存 1 条记录，查询时动态计算匹配日期生成虚拟任务
+--   - 重复实例：is_repeat_instance=1, repeat_parent_id 指向模板
+--     用户操作某天的重复任务后按需创建
 -- =====================================================
 
 DROP TABLE IF EXISTS `task`;
@@ -91,8 +96,9 @@ CREATE TABLE `task` (
   -- 重复任务配置
   `repeat_type` VARCHAR(20) NOT NULL DEFAULT 'NONE' COMMENT '重复类型：NONE（不重复）/DAILY（每日）/WEEKLY（每周）/MONTHLY（每月）',
   `repeat_config` JSON DEFAULT NULL COMMENT '重复配置（JSON）：WEEKLY={"weekdays":[1,3,5]}，MONTHLY={"dayOfMonth":1}',
-  `is_repeat_instance` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为重复任务副本：0=否，1=是',
-  `repeat_parent_id` CHAR(36) DEFAULT NULL COMMENT '重复任务源ID（仅副本有值）',
+  `repeat_end_date` DATE DEFAULT NULL COMMENT '重复结束日期（NULL表示永久重复，仅模板任务有值）',
+  `is_repeat_instance` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为重复任务实例：0=模板/普通任务，1=实例（按需创建）',
+  `repeat_parent_id` CHAR(36) DEFAULT NULL COMMENT '重复模板任务ID（仅实例有值，指向模板的task_id）',
   
   -- 公共字段
   `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间（UTC）',
@@ -104,7 +110,8 @@ CREATE TABLE `task` (
   KEY `idx_user_date` (`user_id`, `date`, `deleted_at`),
   KEY `idx_user_status` (`user_id`, `status`, `deleted_at`),
   KEY `idx_repeat_parent` (`repeat_parent_id`, `deleted_at`),
-  KEY `idx_date_priority` (`date`, `priority`, `created_at`)
+  KEY `idx_date_priority` (`date`, `priority`, `created_at`),
+  KEY `idx_repeat_template` (`user_id`, `repeat_type`, `is_repeat_instance`, `deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务表';
 
 -- =====================================================
@@ -419,7 +426,7 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 ('max_device_count', '10', 'INT', '同时登录设备数上限'),
 ('max_task_per_day', '50', 'INT', '单日任务数上限（不含重复任务副本）'),
 ('max_subtask_per_task', '20', 'INT', '单个任务子任务数上限'),
-('max_repeat_instances', '365', 'INT', '单个重复任务最多生成副本数'),
+('max_repeat_instances', '365', 'INT', '单个重复任务最大实例数（按需创建上限）'),
 ('nickname_modify_limit_days', '7', 'INT', '昵称修改限制天数'),
 ('nickname_modify_limit_count', '2', 'INT', '昵称修改限制次数（X天内最多Y次）'),
 ('free_trial_days', '30', 'INT', '免费期天数'),
@@ -438,8 +445,9 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 --    - uk_task_id：业务主键查询
 --    - idx_user_date：查询指定日期任务（高频）
 --    - idx_user_status：查询待执行/已完成任务
---    - idx_repeat_parent：删除重复任务副本
+--    - idx_repeat_parent：查询/删除重复任务实例
 --    - idx_date_priority：视图聚合排序
+--    - idx_repeat_template：查询用户的重复模板任务（虚拟展开核心索引）
 --
 -- 3. sub_task 表：
 --    - uk_sub_task_id：业务主键查询
@@ -480,7 +488,7 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 --    - 打卡（user + check_in）
 --
 -- 2. 最终一致性：
---    - 重复任务副本生成（异步任务）
+--    - 重复任务实例按需创建（用户操作时同步创建）
 --    - 专注统计汇总（user_focus_stats，异步或定时更新）
 --    - 幂等记录清理（定时任务）
 --    - 过期订单关闭（定时任务）
@@ -498,8 +506,9 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 --    - 清理过期幂等记录（expire_at < now）
 --    - 关闭过期订单（status=PENDING AND expire_at < now）
 --
--- 3. 每日 02:00（UTC）：
---    - 生成重复任务副本（提前 7 天生成）
+-- 3. 重复任务说明：
+--    - 采用虚拟展开方案，无需定时任务预生成副本
+--    - 用户操作时按需实例化（POST /api/v1/tasks/{虚拟ID}/materialize）
 --
 -- 4. 每周一 00:00（UTC）：
 --    - 重置昵称修改限制计数器（7天窗口滚动）
