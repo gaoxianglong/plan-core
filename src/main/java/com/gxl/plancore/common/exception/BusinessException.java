@@ -23,6 +23,12 @@ public class BusinessException extends RuntimeException {
         this.message = message;
     }
     
+    public BusinessException(ErrorCode errorCode, String customMessage) {
+        super(customMessage);
+        this.code = errorCode.getCode();
+        this.message = customMessage;
+    }
+    
     public int getCode() {
         return code;
     }

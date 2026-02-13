@@ -1,10 +1,10 @@
 package com.gxl.plancore.user.infrastructure.persistence.po;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 设备会话持久化对象
- * 对应 device_session 表
+ * 对应数据库 device_session 表
  */
 public class DeviceSessionPO {
 
@@ -18,18 +18,15 @@ public class DeviceSessionPO {
     private String appVersion;
     private String accessToken;
     private String refreshToken;
-    private LocalDateTime expiresAt;
-    private LocalDateTime refreshExpiresAt;
+    private Instant expiresAt;
+    private Instant refreshExpiresAt;
     private String lastLoginIp;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime lastActiveAt;
+    private Instant lastLoginAt;
+    private Instant lastActiveAt;
     private String status;
-    private LocalDateTime loggedOutAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    public DeviceSessionPO() {
-    }
+    private Instant loggedOutAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     // Getters and Setters
     public Long getId() {
@@ -112,19 +109,19 @@ public class DeviceSessionPO {
         this.refreshToken = refreshToken;
     }
 
-    public LocalDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(LocalDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
-    public LocalDateTime getRefreshExpiresAt() {
+    public Instant getRefreshExpiresAt() {
         return refreshExpiresAt;
     }
 
-    public void setRefreshExpiresAt(LocalDateTime refreshExpiresAt) {
+    public void setRefreshExpiresAt(Instant refreshExpiresAt) {
         this.refreshExpiresAt = refreshExpiresAt;
     }
 
@@ -136,19 +133,19 @@ public class DeviceSessionPO {
         this.lastLoginIp = lastLoginIp;
     }
 
-    public LocalDateTime getLastLoginAt() {
+    public Instant getLastLoginAt() {
         return lastLoginAt;
     }
 
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+    public void setLastLoginAt(Instant lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
     }
 
-    public LocalDateTime getLastActiveAt() {
+    public Instant getLastActiveAt() {
         return lastActiveAt;
     }
 
-    public void setLastActiveAt(LocalDateTime lastActiveAt) {
+    public void setLastActiveAt(Instant lastActiveAt) {
         this.lastActiveAt = lastActiveAt;
     }
 
@@ -160,27 +157,27 @@ public class DeviceSessionPO {
         this.status = status;
     }
 
-    public LocalDateTime getLoggedOutAt() {
+    public Instant getLoggedOutAt() {
         return loggedOutAt;
     }
 
-    public void setLoggedOutAt(LocalDateTime loggedOutAt) {
+    public void setLoggedOutAt(Instant loggedOutAt) {
         this.loggedOutAt = loggedOutAt;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 }

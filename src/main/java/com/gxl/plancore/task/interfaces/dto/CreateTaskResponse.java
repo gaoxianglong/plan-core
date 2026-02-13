@@ -1,7 +1,7 @@
 package com.gxl.plancore.task.interfaces.dto;
 
 /**
- * 创建任务响应
+ * 创建任务响应 DTO
  */
 public class CreateTaskResponse {
 
@@ -10,25 +10,18 @@ public class CreateTaskResponse {
     private String priority;
     private String status;
     private String date;
-    private String repeatType;
-    private Object repeatConfig;
-    private String repeatEndDate;
     private String createdAt;
 
-    /**
-     * 构造创建任务响应
-     */
-    public CreateTaskResponse(String id, String title, String priority, String status, String date,
-                              String repeatType, Object repeatConfig, String repeatEndDate,
-                              String createdAt) {
+    public CreateTaskResponse() {
+    }
+
+    public CreateTaskResponse(String id, String title, String priority,
+                              String status, String date, String createdAt) {
         this.id = id;
         this.title = title;
         this.priority = priority;
         this.status = status;
         this.date = date;
-        this.repeatType = repeatType;
-        this.repeatConfig = repeatConfig;
-        this.repeatEndDate = repeatEndDate;
         this.createdAt = createdAt;
     }
 
@@ -36,35 +29,47 @@ public class CreateTaskResponse {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getTitle() {
         return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getPriority() {
         return priority;
     }
 
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getDate() {
         return date;
     }
 
-    public String getRepeatType() {
-        return repeatType;
-    }
-
-    public Object getRepeatConfig() {
-        return repeatConfig;
-    }
-
-    public String getRepeatEndDate() {
-        return repeatEndDate;
+    public void setDate(String date) {
+        this.date = date;
     }
 
     public String getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
     }
 }

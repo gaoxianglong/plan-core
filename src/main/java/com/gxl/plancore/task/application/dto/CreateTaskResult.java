@@ -4,7 +4,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * 创建任务结果
+ * 创建任务结果 DTO
+ * 应用层返回给接口层
  */
 public class CreateTaskResult {
 
@@ -12,26 +13,16 @@ public class CreateTaskResult {
     private final String title;
     private final String priority;
     private final String status;
-    private final String date;
-    private final String repeatType;
-    private final String repeatConfig;
-    private final LocalDate repeatEndDate;
+    private final LocalDate date;
     private final Instant createdAt;
 
-    /**
-     * 构造创建任务结果
-     */
-    public CreateTaskResult(String taskId, String title, String priority, String status, String date,
-                            String repeatType, String repeatConfig, LocalDate repeatEndDate,
-                            Instant createdAt) {
+    public CreateTaskResult(String taskId, String title, String priority,
+                            String status, LocalDate date, Instant createdAt) {
         this.taskId = taskId;
         this.title = title;
         this.priority = priority;
         this.status = status;
         this.date = date;
-        this.repeatType = repeatType;
-        this.repeatConfig = repeatConfig;
-        this.repeatEndDate = repeatEndDate;
         this.createdAt = createdAt;
     }
 
@@ -51,20 +42,8 @@ public class CreateTaskResult {
         return status;
     }
 
-    public String getDate() {
+    public LocalDate getDate() {
         return date;
-    }
-
-    public String getRepeatType() {
-        return repeatType;
-    }
-
-    public String getRepeatConfig() {
-        return repeatConfig;
-    }
-
-    public LocalDate getRepeatEndDate() {
-        return repeatEndDate;
     }
 
     public Instant getCreatedAt() {

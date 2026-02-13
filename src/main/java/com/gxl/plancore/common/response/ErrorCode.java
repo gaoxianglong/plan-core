@@ -32,11 +32,8 @@ public enum ErrorCode {
     TASK_DATE_OUT_OF_RANGE(3002, "日期超出范围"),
     TASK_DAILY_LIMIT(3003, "单日任务数超出上限"),
     TASK_REPEAT_CONFIG_INVALID(3004, "重复配置格式错误"),
-    TASK_HAS_INCOMPLETE_SUBTASKS(3005, "父任务存在未完成子任务"),
-    TASK_PARENT_NOT_FOUND(3006, "父任务不存在"),
-    TASK_SUBTASK_LIMIT(3007, "子任务数量超出上限"),
-    TASK_VIRTUAL_ID_INVALID(3008, "虚拟任务ID格式错误"),
     TASK_NOT_FOUND(3009, "任务不存在"),
+    TASK_TARGET_DATE_OUT_OF_RANGE(3012, "目标日期超出有效范围"),
     
     // 专注模块 4001-4099
     FOCUS_SESSION_EXISTS(4001, "存在进行中的会话"),

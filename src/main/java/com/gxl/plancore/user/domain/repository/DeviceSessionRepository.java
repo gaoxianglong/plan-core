@@ -1,13 +1,12 @@
 package com.gxl.plancore.user.domain.repository;
 
-import com.gxl.plancore.user.domain.entity.DeviceSession;
-
 import java.util.List;
 import java.util.Optional;
 
+import com.gxl.plancore.user.domain.entity.DeviceSession;
+
 /**
  * 设备会话仓储接口
- * 领域层定义，由基础设施层实现
  */
 public interface DeviceSessionRepository {
 

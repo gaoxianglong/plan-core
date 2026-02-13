@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 任务列表响应
+ * 任务列表响应 DTO
+ * 按优先级分组返回
  */
 public class TaskListResponse {
 
@@ -12,9 +13,9 @@ public class TaskListResponse {
     private Map<String, Boolean> hasUncheckedTasks;
     private Map<String, List<TaskResponse>> tasks;
 
-    /**
-     * 构造任务列表响应
-     */
+    public TaskListResponse() {
+    }
+
     public TaskListResponse(String date, Map<String, Boolean> hasUncheckedTasks,
                             Map<String, List<TaskResponse>> tasks) {
         this.date = date;
@@ -22,24 +23,27 @@ public class TaskListResponse {
         this.tasks = tasks;
     }
 
-    /**
-     * 获取查询日期
-     */
     public String getDate() {
         return date;
     }
 
-    /**
-     * 获取各象限是否有未完成任务
-     */
+    public void setDate(String date) {
+        this.date = date;
+    }
+
     public Map<String, Boolean> getHasUncheckedTasks() {
         return hasUncheckedTasks;
     }
 
-    /**
-     * 获取按象限分组的任务列表
-     */
+    public void setHasUncheckedTasks(Map<String, Boolean> hasUncheckedTasks) {
+        this.hasUncheckedTasks = hasUncheckedTasks;
+    }
+
     public Map<String, List<TaskResponse>> getTasks() {
         return tasks;
+    }
+
+    public void setTasks(Map<String, List<TaskResponse>> tasks) {
+        this.tasks = tasks;
     }
 }
