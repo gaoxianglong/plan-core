@@ -18,12 +18,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gxl.plancore.common.exception.BusinessException;
 import com.gxl.plancore.common.response.ApiResponse;
+import com.gxl.plancore.common.response.ErrorCode;
 import com.gxl.plancore.task.application.command.CreateTaskCommand;
 import com.gxl.plancore.task.application.command.UpdateTaskCommand;
 import com.gxl.plancore.task.application.dto.ChartDataItem;
 import com.gxl.plancore.task.application.dto.CreateTaskResult;
 import com.gxl.plancore.task.application.dto.DeleteTaskResult;
+import com.gxl.plancore.task.application.dto.PerDateTaskData;
 import com.gxl.plancore.task.application.dto.TaskDTO;
 import com.gxl.plancore.task.application.dto.TaskListResult;
 import com.gxl.plancore.task.application.dto.TaskStatsResult;
@@ -34,6 +37,7 @@ import com.gxl.plancore.task.interfaces.dto.ChartDataResponse;
 import com.gxl.plancore.task.interfaces.dto.CreateTaskRequest;
 import com.gxl.plancore.task.interfaces.dto.CreateTaskResponse;
 import com.gxl.plancore.task.interfaces.dto.DeleteTaskResponse;
+import com.gxl.plancore.task.interfaces.dto.PerDateTaskListResponse;
 import com.gxl.plancore.task.interfaces.dto.TaskListResponse;
 import com.gxl.plancore.task.interfaces.dto.TaskResponse;
 import com.gxl.plancore.task.interfaces.dto.TaskStatsResponse;
@@ -62,24 +66,39 @@ public class TaskController {
 
     /**
      * 查询任务列表（按日期）
-     * GET /api/v1/tasks?date=2026-02-10&showCompleted=true
+     * 单日期：GET /api/v1/tasks?date=2026-02-10&showCompleted=true
+     * 多日期：GET /api/v1/tasks?dates=2026-02-10,2026-02-11,2026-02-12&showCompleted=true
      */
     @GetMapping
     public ApiResponse<TaskListResponse> queryTasks(
             HttpServletRequest httpRequest,
-            @RequestParam("date") String date,
+            @RequestParam(value = "date", required = false) String date,
+            @RequestParam(value = "dates", required = false) String dates,
             @RequestParam(value = "showCompleted", defaultValue = "true") boolean showCompleted) {
-        log.info("收到查询任务列表请求: date={}, showCompleted={}", date, showCompleted);
+        log.info("收到查询任务列表请求: date={}, dates={}, showCompleted={}", date, dates, showCompleted);
 
-        // 从拦截器设置的请求属性中获取用户ID
+        if ((date == null || date.trim().isEmpty()) && (dates == null || dates.trim().isEmpty())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "date 与 dates 必填其一");
+        }
+
         String userId = (String) httpRequest.getAttribute("userId");
 
-        // 调用应用服务查询
-        TaskListResult result = taskApplicationService.queryTasksByDate(userId, date, showCompleted);
+        TaskListResult result;
+        if (dates != null && !dates.trim().isEmpty()) {
+            // 多日期
+            List<String> dateList = new ArrayList<>();
+            for (String d : dates.split(",")) {
+                if (d != null && !d.trim().isEmpty()) {
+                    dateList.add(d.trim());
+                }
+            }
+            result = taskApplicationService.queryTasksByDates(userId, dateList, showCompleted);
+        } else {
+            // 单日期
+            result = taskApplicationService.queryTasksByDate(userId, date.trim(), showCompleted);
+        }
 
-        // 转换为接口层响应
         TaskListResponse response = convertToResponse(result);
-
         return ApiResponse.success(response);
     }
 
@@ -235,31 +254,25 @@ public class TaskController {
      * 将应用层结果转换为接口层响应
      */
     private TaskListResponse convertToResponse(TaskListResult result) {
-        Map<String, List<TaskResponse>> tasksResponse = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<TaskDTO>> entry : result.getTasks().entrySet()) {
-            List<TaskResponse> taskResponses = new ArrayList<>();
-            for (TaskDTO dto : entry.getValue()) {
-                String createdAtStr = DateTimeFormatter.ISO_INSTANT.format(dto.getCreatedAt());
-                String completedAtStr = null;
-                if (dto.getCompletedAt() != null) {
-                    completedAtStr = DateTimeFormatter.ISO_INSTANT.format(dto.getCompletedAt());
+        if (result.isMultiDate()) {
+            Map<String, PerDateTaskListResponse> dataByDate = new LinkedHashMap<>();
+            for (Map.Entry<String, PerDateTaskData> entry : result.getDataByDate().entrySet()) {
+                Map<String, List<TaskResponse>> tasksResponse = new LinkedHashMap<>();
+                for (Map.Entry<String, List<TaskDTO>> taskEntry : entry.getValue().getTasks().entrySet()) {
+                    List<TaskResponse> taskResponses = convertTaskDTOsToResponses(taskEntry.getValue());
+                    tasksResponse.put(taskEntry.getKey(), taskResponses);
                 }
-
-                TaskResponse taskResponse = new TaskResponse(
-                        dto.getTaskId(),
-                        dto.getTitle(),
-                        dto.getPriority(),
-                        dto.getStatus(),
-                        dto.getDate().toString(),
-                        createdAtStr,
-                        completedAtStr
-                );
-                taskResponses.add(taskResponse);
+                dataByDate.put(entry.getKey(), new PerDateTaskListResponse(
+                        entry.getValue().getHasUncheckedTasks(), tasksResponse));
             }
-            tasksResponse.put(entry.getKey(), taskResponses);
+            return new TaskListResponse(dataByDate);
         }
 
+        Map<String, List<TaskResponse>> tasksResponse = new LinkedHashMap<>();
+        for (Map.Entry<String, List<TaskDTO>> entry : result.getTasks().entrySet()) {
+            List<TaskResponse> taskResponses = convertTaskDTOsToResponses(entry.getValue());
+            tasksResponse.put(entry.getKey(), taskResponses);
+        }
         return new TaskListResponse(result.getDate(), result.getHasUncheckedTasks(), tasksResponse);
     }
 

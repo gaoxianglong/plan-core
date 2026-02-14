@@ -22,6 +22,7 @@ import com.gxl.plancore.task.application.command.UpdateTaskCommand;
 import com.gxl.plancore.task.application.dto.ChartDataItem;
 import com.gxl.plancore.task.application.dto.CreateTaskResult;
 import com.gxl.plancore.task.application.dto.DeleteTaskResult;
+import com.gxl.plancore.task.application.dto.PerDateTaskData;
 import com.gxl.plancore.task.application.dto.TaskDTO;
 import com.gxl.plancore.task.application.dto.TaskListResult;
 import com.gxl.plancore.task.application.dto.TaskStatsResult;
@@ -162,6 +163,115 @@ public class TaskApplicationService {
 
         log.info("查询任务列表完成: userId={}, date={}, totalTasks={}", userId, dateStr, allTasks.size());
         return new TaskListResult(dateStr, hasUncheckedTasks, tasksMap);
+    }
+
+    /**
+     * 查询多个日期的任务列表（按优先级分组）
+     *
+     * @param userId        用户ID
+     * @param dateStrList   日期字符串列表 YYYY-MM-DD
+     * @param showCompleted 是否显示已完成任务
+     * @return 按日期分组的任务列表
+     */
+    public TaskListResult queryTasksByDates(String userId, List<String> dateStrList, boolean showCompleted) {
+        if (dateStrList == null || dateStrList.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "dates 参数不能为空");
+        }
+
+        log.info("查询任务列表（多日期）: userId={}, dates={}, showCompleted={}", userId, dateStrList, showCompleted);
+
+        // 1. 校验并解析日期，去重且保持顺序
+        List<LocalDate> dates = new ArrayList<>();
+        for (String dateStr : dateStrList) {
+            LocalDate d = validateDate(dateStr.trim());
+            if (!dates.contains(d)) {
+                dates.add(d);
+            }
+        }
+
+        if (dates.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "dates 参数不能为空");
+        }
+
+        // 2. 确定范围，一次查询
+        LocalDate minDate = dates.get(0);
+        LocalDate maxDate = dates.get(0);
+        for (LocalDate d : dates) {
+            if (d.isBefore(minDate)) {
+                minDate = d;
+            }
+            if (d.isAfter(maxDate)) {
+                maxDate = d;
+            }
+        }
+
+        Set<String> requestedDateSet = new HashSet<>();
+        for (LocalDate d : dates) {
+            requestedDateSet.add(d.toString());
+        }
+
+        List<Task> allTasks = taskRepository.findByUserIdAndDateRange(
+                userId, minDate.toString(), maxDate.toString());
+
+        // 3. 按日期分组
+        Map<String, List<Task>> tasksByDate = new LinkedHashMap<>();
+        for (String dateStr : requestedDateSet) {
+            tasksByDate.put(dateStr, new ArrayList<>());
+        }
+        for (Task task : allTasks) {
+            String dateStr = task.getDate().toString();
+            if (requestedDateSet.contains(dateStr)) {
+                tasksByDate.get(dateStr).add(task);
+            }
+        }
+
+        // 4. 为每个日期构建 PerDateTaskData（按请求顺序）
+        Map<String, PerDateTaskData> dataByDate = new LinkedHashMap<>();
+        for (LocalDate d : dates) {
+            String dateKey = d.toString();
+            List<Task> dayTasks = tasksByDate.get(dateKey);
+            if (dayTasks == null) {
+                dayTasks = new ArrayList<>();
+            }
+
+            Map<String, List<TaskDTO>> tasksMap = new LinkedHashMap<>();
+            tasksMap.put("P0", new ArrayList<>());
+            tasksMap.put("P1", new ArrayList<>());
+            tasksMap.put("P2", new ArrayList<>());
+            tasksMap.put("P3", new ArrayList<>());
+
+            Map<String, Boolean> hasUncheckedTasks = new LinkedHashMap<>();
+            hasUncheckedTasks.put("P0", false);
+            hasUncheckedTasks.put("P1", false);
+            hasUncheckedTasks.put("P2", false);
+            hasUncheckedTasks.put("P3", false);
+
+            for (Task task : dayTasks) {
+                String priorityKey = task.getPriority().name();
+                if (task.getStatus() == TaskStatus.INCOMPLETE) {
+                    hasUncheckedTasks.put(priorityKey, true);
+                }
+                if (!showCompleted && task.getStatus() == TaskStatus.COMPLETED) {
+                    continue;
+                }
+                TaskDTO dto = new TaskDTO(
+                        task.getTaskId(),
+                        task.getTitle(),
+                        task.getPriority().name(),
+                        task.getStatus().name(),
+                        task.getDate(),
+                        task.getCreatedAt(),
+                        task.getCompletedAt()
+                );
+                tasksMap.get(priorityKey).add(dto);
+            }
+
+            dataByDate.put(dateKey, new PerDateTaskData(hasUncheckedTasks, tasksMap));
+        }
+
+        int totalTasks = allTasks.size();
+        log.info("查询任务列表完成（多日期）: userId={}, dateCount={}, totalTasks={}", userId, dates.size(), totalTasks);
+        return new TaskListResult(dataByDate);
     }
 
     /**

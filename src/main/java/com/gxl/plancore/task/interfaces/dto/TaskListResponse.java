@@ -5,13 +5,16 @@ import java.util.Map;
 
 /**
  * 任务列表响应 DTO
- * 按优先级分组返回
+ * 单日期：date、hasUncheckedTasks、tasks 有值
+ * 多日期：dataByDate 有值
  */
 public class TaskListResponse {
 
     private String date;
     private Map<String, Boolean> hasUncheckedTasks;
     private Map<String, List<TaskResponse>> tasks;
+    /** 多日期时，key=日期，value=当日数据 */
+    private Map<String, PerDateTaskListResponse> dataByDate;
 
     public TaskListResponse() {
     }
@@ -21,6 +24,14 @@ public class TaskListResponse {
         this.date = date;
         this.hasUncheckedTasks = hasUncheckedTasks;
         this.tasks = tasks;
+        this.dataByDate = null;
+    }
+
+    public TaskListResponse(Map<String, PerDateTaskListResponse> dataByDate) {
+        this.date = null;
+        this.hasUncheckedTasks = null;
+        this.tasks = null;
+        this.dataByDate = dataByDate;
     }
 
     public String getDate() {
@@ -45,5 +56,13 @@ public class TaskListResponse {
 
     public void setTasks(Map<String, List<TaskResponse>> tasks) {
         this.tasks = tasks;
+    }
+
+    public Map<String, PerDateTaskListResponse> getDataByDate() {
+        return dataByDate;
+    }
+
+    public void setDataByDate(Map<String, PerDateTaskListResponse> dataByDate) {
+        this.dataByDate = dataByDate;
     }
 }
