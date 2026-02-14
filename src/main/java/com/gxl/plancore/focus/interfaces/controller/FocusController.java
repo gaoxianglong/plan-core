@@ -1,8 +1,6 @@
 package com.gxl.plancore.focus.interfaces.controller;
 
-import com.gxl.plancore.common.exception.BusinessException;
 import com.gxl.plancore.common.response.ApiResponse;
-import com.gxl.plancore.common.response.ErrorCode;
 import com.gxl.plancore.focus.application.command.EndFocusCommand;
 import com.gxl.plancore.focus.application.command.StartFocusCommand;
 import com.gxl.plancore.focus.application.dto.EndFocusResult;
@@ -26,7 +24,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,15 +35,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class FocusController {
 
         private static final Logger log = LoggerFactory.getLogger(FocusController.class);
-        private static final String BEARER_PREFIX = "Bearer ";
 
         private final FocusApplicationService focusApplicationService;
-        private final AuthService authService;
 
         public FocusController(FocusApplicationService focusApplicationService,
                         AuthService authService) {
                 this.focusApplicationService = focusApplicationService;
-                this.authService = authService;
         }
 
         /**
@@ -135,15 +129,5 @@ public class FocusController {
                                 stats.getTotalHours());
 
                 return ApiResponse.success(response);
-        }
-
-        /**
-         * 从 Authorization header 中提取 access_token
-         */
-        private String extractAccessToken(String authorization) {
-                if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
-                        throw new BusinessException(ErrorCode.UNAUTHORIZED);
-                }
-                return authorization.substring(BEARER_PREFIX.length());
         }
 }

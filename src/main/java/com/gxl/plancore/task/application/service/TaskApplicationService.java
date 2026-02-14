@@ -373,15 +373,16 @@ public class TaskApplicationService {
         }
         double totalCompletionRate = calculateRate(totalCompleted, totalTasks);
 
-        // ========== 查询2：仅查询当天的任务明细 ==========
-        List<Task> dayTasks = taskRepository.findByUserIdAndDate(userId, dateStr);
-        List<Task> filteredDayTasks = filterByPriorities(dayTasks, priorityFilter);
+        // ========== 查询2：查询时间区间内的任务明细（周维度=一周，月维度=一月） ==========
+        List<Task> rangeTasks = taskRepository.findByUserIdAndDateRange(
+                userId, startDate.toString(), endDate.toString());
+        List<Task> filteredRangeTasks = filterByPriorities(rangeTasks, priorityFilter);
 
         // 分离已完成和未完成任务列表
         List<TaskDTO> completedTasks = new ArrayList<>();
         List<TaskDTO> incompleteTasks = new ArrayList<>();
 
-        for (Task task : filteredDayTasks) {
+        for (Task task : filteredRangeTasks) {
             TaskDTO dto = new TaskDTO(
                     task.getTaskId(),
                     task.getTitle(),
@@ -399,8 +400,8 @@ public class TaskApplicationService {
             }
         }
 
-        log.info("查询任务统计完成: userId={}, dimension={}, range=[{}, {}], totalTasks={}, totalCompleted={}, dayTasks={}",
-                userId, dimension, startDate, endDate, totalTasks, totalCompleted, filteredDayTasks.size());
+        log.info("查询任务统计完成: userId={}, dimension={}, range=[{}, {}], totalTasks={}, totalCompleted={}, rangeTasks={}",
+                userId, dimension, startDate, endDate, totalTasks, totalCompleted, filteredRangeTasks.size());
 
         return new TaskStatsResult(
                 dimension,
